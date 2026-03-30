@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StockMind — Agentic Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #070b0f;
+    --surface: #0d1419;
+    --border:  #1a2530;
+    --accent:  #00e5a0;
+    --accent2: #ff6b35;
+    --accent3: #3b82f6;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --glow:    0 0 30px rgba(0,229,160,0.15);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,229,160,0.07) 0%, transparent 70%);
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 3rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(7,11,15,0.92);
+    backdrop-filter: blur(12px);
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .tag { font-size: 0.65rem; color: var(--muted); border: 1px solid var(--border); padding: 0.2rem 0.7rem; border-radius: 999px; letter-spacing: 2px; text-transform: uppercase; }
+
+  .hero { max-width: 700px; margin: 6rem auto 4rem; text-align: center; padding: 0 1.5rem; }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800; line-height: 1.1; margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 40%, var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; line-height: 1.8; }
+
+  .search-form {
+    display: flex; border: 1px solid var(--accent); border-radius: 8px;
+    overflow: hidden; box-shadow: var(--glow); transition: box-shadow 0.3s;
+  }
+  .search-form:focus-within { box-shadow: 0 0 50px rgba(0,229,160,0.25); }
+  .search-form input {
+    flex: 1; background: var(--surface); border: none; outline: none;
+    padding: 1rem 1.5rem; font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem; color: var(--text);
+  }
+  .search-form input::placeholder { color: var(--muted); }
+  .search-form button {
+    background: var(--accent); color: #000; border: none; padding: 1rem 2rem;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
+    cursor: pointer; letter-spacing: 1px; transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .search-form button:hover { background: #00c988; }
+
+  .log-strip { max-width: 900px; margin: 0 auto 3rem; padding: 0 1.5rem; }
+  .log-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem 1.5rem; font-size: 0.75rem;
+    color: var(--accent); line-height: 2;
+  }
+
+  .results { max-width: 1200px; margin: 0 auto 6rem; padding: 0 1.5rem; display: grid; gap: 1.5rem; }
+
+  .price-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    position: relative; overflow: hidden;
+  }
+  .price-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+  }
+  .stock-title { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: #fff; }
+  .stock-sub { color: var(--muted); font-size: 0.75rem; margin-top: 0.3rem; }
+  .price-num { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; color: var(--accent); }
+  .price-change { font-size: 0.8rem; margin-top: 0.3rem; }
+  .up { color: var(--accent); } .dn { color: var(--accent2); }
+
+  .metrics-grid {
+    grid-column: 1/-1;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 1rem;
+  }
+  .metric { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+  .metric-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem; }
+  .metric-value { font-size: 0.95rem; color: var(--text); font-weight: 600; }
+
+  .summary-box {
+    grid-column: 1/-1; background: rgba(0,229,160,0.05);
+    border: 1px solid rgba(0,229,160,0.2); border-radius: 8px;
+    padding: 1rem 1.2rem; font-size: 0.8rem; line-height: 1.8; color: var(--text);
+  }
+
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .section-header {
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 1.2rem 2rem; border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .section-icon { font-size: 1.2rem; }
+  .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; }
+  .section-badge {
+    margin-left: auto; font-size: 0.6rem; padding: 0.2rem 0.7rem;
+    border-radius: 999px; background: rgba(0,229,160,0.1); color: var(--accent);
+    border: 1px solid rgba(0,229,160,0.3); text-transform: uppercase; letter-spacing: 1px;
+  }
+  .section-body { padding: 1.5rem 2rem; font-size: 0.8rem; line-height: 1.9; color: #c4cdd8; white-space: pre-wrap; }
+
+  .news-list { padding: 1rem 2rem 1.5rem; }
+  .news-item { border-bottom: 1px solid var(--border); padding: 0.8rem 0; font-size: 0.78rem; }
+  .news-item:last-child { border-bottom: none; }
+  .news-title { color: var(--text); font-weight: 600; margin-bottom: 0.2rem; }
+  .news-meta { color: var(--muted); font-size: 0.65rem; }
+  .news-desc { color: #8899aa; margin-top: 0.2rem; font-size: 0.72rem; line-height: 1.6; }
+
+  .tweet-list { padding: 1rem 2rem 1.5rem; }
+  .tweet-item { border-bottom: 1px solid var(--border); padding: 0.8rem 0; font-size: 0.78rem; line-height: 1.7; }
+  .tweet-item:last-child { border-bottom: none; }
+  .tweet-text { color: #c4cdd8; }
+  .tweet-meta { color: var(--muted); font-size: 0.65rem; margin-top: 0.3rem; }
+  .tweet-meta .likes { color: var(--accent2); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+  .verdict-card {
+    background: linear-gradient(135deg, rgba(0,229,160,0.05), rgba(59,130,246,0.05));
+    border: 1px solid rgba(0,229,160,0.3); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,229,160,0.08);
+  }
+  .verdict-header {
+    background: linear-gradient(90deg, rgba(0,229,160,0.15), rgba(59,130,246,0.1));
+    padding: 1.2rem 2rem; border-bottom: 1px solid rgba(0,229,160,0.2);
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .verdict-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--accent); }
+  .verdict-body { padding: 1.5rem 2rem; font-size: 0.8rem; line-height: 2; color: #d4dde8; white-space: pre-wrap; }
+
+  .error-box {
+    max-width: 700px; margin: 2rem auto; padding: 1.5rem 2rem;
+    background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 8px; color: var(--accent2); font-size: 0.85rem; text-align: center;
+  }
+
+  .loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(7,11,15,0.95); z-index: 999;
+    flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem;
+  }
+  .loading-overlay.active { display: flex; }
+  .spinner {
+    width: 48px; height: 48px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'Syne', sans-serif; font-size: 1rem; color: var(--accent); text-align: center; }
+  .loading-sub { color: var(--muted); font-size: 0.75rem; margin-top: 0.3rem; text-align: center; line-height: 1.8; }
+
+  .agents-progress { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .agent-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); animation: pulse 1.5s ease-in-out infinite;
+  }
+  .agent-dot:nth-child(2) { animation-delay: 0.2s; }
+  .agent-dot:nth-child(3) { animation-delay: 0.4s; }
+  .agent-dot:nth-child(4) { animation-delay: 0.6s; }
+  .agent-dot:nth-child(5) { animation-delay: 0.8s; }
+  @keyframes pulse { 0%,100%{background:var(--border)} 50%{background:var(--accent)} }
+
+  footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.65rem; letter-spacing: 1px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 768px) {
+    header { padding: 1rem 1.5rem; }
+    .price-card { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .section-body, .verdict-body { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loading-text">Running 5 Agents...</div>
+  <div class="loading-sub">
+    Price → News → Twitter → Fundamentals → Strategy<br/>
+    This takes 30–60 seconds. Please wait.
+  </div>
+  <div class="agents-progress">
+    <div class="agent-dot"></div>
+    <div class="agent-dot"></div>
+    <div class="agent-dot"></div>
+    <div class="agent-dot"></div>
+    <div class="agent-dot"></div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">Stock<span>Mind</span></div>
+  <div class="tag">5-Agent Graph System</div>
+</header>
+
+<section class="hero">
+  <h1>Agentic Stock Intelligence</h1>
+  <p>Enter any stock ticker or company name. 5 AI agents run in sequence —
+     live price, news, Twitter sentiment, 10-year fundamentals, and a full
+     trading strategy from intraday to long-term investor.</p>
+  <form class="search-form" method="POST" action="/analyze"
+        onsubmit="document.getElementById('loader').classList.add('active')">
+    <input type="text" name="ticker"
+           placeholder="AAPL / TSLA / bitcoin / Reliance / Nifty 50"
+           value="{{ query_ticker or '' }}" required autocomplete="off"/>
+    <button type="submit">ANALYZE →</button>
+  </form>
+</section>
+
+{% if error %}
+<div class="error-box">⚠️ Error: {{ error }}</div>
+{% endif %}
+
+{% if result %}
+
+<div class="log-strip">
+  <div class="log-box">
+    {% for log in result.logs %}<span>{{ log }}</span>{% endfor %}
+  </div>
+</div>
+
+<div class="results">
+
+  <!-- PRICE CARD -->
+  <div class="price-card">
+    <div>
+      <div class="stock-title">{{ result.ticker }}</div>
+      <div class="stock-sub">{{ result.company }}</div>
+      <div class="stock-sub" style="margin-top:0.5rem">{{ result.price.sector }} · {{ result.price.industry }}</div>
+    </div>
+    <div>
+      <div class="price-num">
+        {% if result.price.price %}${{ "%.2f"|format(result.price.price) }}{% else %}—{% endif %}
+      </div>
+      <div class="price-change">
+        {% if result.price.price and result.price.prev_close %}
+          {% set chg = result.price.price - result.price.prev_close %}
+          {% set pct = chg / result.price.prev_close * 100 %}
+          <span class="{{ 'up' if chg >= 0 else 'dn' }}">
+            {{ '+' if chg >= 0 else '' }}{{ "%.2f"|format(chg) }}
+            ({{ '+' if pct >= 0 else '' }}{{ "%.2f"|format(pct) }}%)
+          </span> vs prev close
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric"><div class="metric-label">Open</div><div class="metric-value">{% if result.price.open %}${{ result.price.open }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">Day High</div><div class="metric-value">{% if result.price.day_high %}${{ result.price.day_high }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">Day Low</div><div class="metric-value">{% if result.price.day_low %}${{ result.price.day_low }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">Volume</div><div class="metric-value">{{ "{:,}".format(result.price.volume) if result.price.volume else '—' }}</div></div>
+      <div class="metric"><div class="metric-label">Market Cap</div><div class="metric-value">{% if result.price.market_cap %}${{ "{:,.0f}".format(result.price.market_cap) }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">P/E Ratio</div><div class="metric-value">{{ "%.2f"|format(result.price.pe_ratio) if result.price.pe_ratio else '—' }}</div></div>
+      <div class="metric"><div class="metric-label">EPS</div><div class="metric-value">{{ "%.2f"|format(result.price.eps) if result.price.eps else '—' }}</div></div>
+      <div class="metric"><div class="metric-label">52W High</div><div class="metric-value">{% if result.price['52w_high'] %}${{ result.price['52w_high'] }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">52W Low</div><div class="metric-value">{% if result.price['52w_low'] %}${{ result.price['52w_low'] }}{% else %}—{% endif %}</div></div>
+      <div class="metric"><div class="metric-label">Beta</div><div class="metric-value">{{ result.price.beta or '—' }}</div></div>
+      <div class="metric"><div class="metric-label">Dividend Yield</div><div class="metric-value">{{ "%.2f%%"|format(result.price.dividend * 100) if result.price.dividend else '—' }}</div></div>
+    </div>
+
+    {% if result.price.summary %}
+    <div class="summary-box">{{ result.price.summary }}</div>
+    {% endif %}
+  </div>
+
+  <!-- NEWS + TWITTER -->
+  <div class="two-col">
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">📰</span>
+        <span class="section-title">News Analysis</span>
+        <span class="section-badge">Agent 2</span>
+      </div>
+      <div class="section-body">{{ result.news.analysis }}</div>
+      {% if result.news.articles %}
+      <div class="news-list">
+        {% for a in result.news.articles %}
+        <div class="news-item">
+          <div class="news-title">
+            <a href="{{ a.link }}" target="_blank" style="color:inherit;text-decoration:none;">{{ a.title }}</a>
+          </div>
+          <div class="news-meta">{{ a.pubDate }}</div>
+          {% if a.description %}<div class="news-desc">{{ a.description[:150] }}…</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">🐦</span>
+        <span class="section-title">Twitter / X Sentiment</span>
+        <span class="section-badge">Agent 3</span>
+      </div>
+      <div class="section-body">{{ result.twitter.analysis }}</div>
+      {% if result.twitter.tweets %}
+      <div class="tweet-list">
+        {% for t in result.twitter.tweets %}
+        <div class="tweet-item">
+          <div class="tweet-text">{{ t.text[:200] }}{% if t.text|length > 200 %}…{% endif %}</div>
+          <div class="tweet-meta">
+            <span class="likes">❤ {{ t.likes }}</span> &nbsp;
+            🔁 {{ t.retweets }} &nbsp;
+            {{ t.created_at[:10] if t.created_at else '' }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- FUNDAMENTALS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📊</span>
+      <span class="section-title">Fundamental & Historical Analysis — Past 10Y · Past 5Y · Next 5Y</span>
+      <span class="section-badge">Agent 4</span>
+    </div>
+    <div class="section-body">{{ result.fundamental.analysis }}</div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict-card">
+    <div class="verdict-header">
+      <span style="font-size:1.4rem">🎯</span>
+      <span class="verdict-title">Trading Strategy & Final Verdict</span>
+      <span style="margin-left:auto;font-size:0.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace;">AGENT 5 · MASTER STRATEGIST</span>
+    </div>
+    <div class="verdict-body">{{ result.strategy.verdict }}</div>
+  </div>
+
+</div>
+{% endif %}
+
+<footer>STOCKMIND · AGENTIC GRAPH · NOT FINANCIAL ADVICE · EDUCATIONAL USE ONLY</footer>
+
+<script>
+  window.addEventListener('load', () => {
+    document.getElementById('loader').classList.remove('active');
+  });
+</script>
+</body>
+</html>
